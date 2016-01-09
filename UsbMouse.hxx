@@ -51,17 +51,10 @@ UsbMouseDevice::UsbMouseDevice()
     cli();
     usbDeviceDisconnect();
     usbDeviceConnect();
-
-
     usbInit();
-
     sei();
 
-    reportBuffer.buttonMask = 0;
-    reportBuffer.dx = 0;
-    reportBuffer.dy = 0;
-    reportBuffer.dWheel = 0;
-
+    resetStatus();
 }
 
 bool UsbMouseDevice::isUsbReady()
@@ -77,10 +70,52 @@ void UsbMouseDevice::move(char dx, char dy)
     updateStatus();
 }
 
+void UsbMouseDevice::moveWheel(char dy)
+{
+    reportBuffer.dWheel += dy;
+    updateStatus();
+}
+
+void UsbMouseDevice::pressButton(char button)
+{
+    reportBuffer.buttonMask |= button;
+    updateStatus();
+}
+
+void UsbMouseDevice::releaseButton(char button)
+{
+    reportBuffer.buttonMask &= ~button;
+    updateStatus();
+}
+
+void UsbMouseDevice::setButtonState(char button, bool pressed)
+{
+    if (pressed)
+    {
+        pressButton(button);
+    }
+    else
+    {
+        releaseButton(button);
+    }
+}
+
+/*void UsbMouseDevice::clickButton(char button)
+{
+    pressButton(button);
+    while (!usbInterruptIsReady()) {
+    }
+    releaseButton(button);
+}*/
+
 void UsbMouseDevice::updateStatus()
 {
     usbSetInterrupt((unsigned char*)(void *)&reportBuffer, sizeof(reportBuffer));
+    resetStatus();
+}
 
+void UsbMouseDevice::resetStatus()
+{
     reportBuffer.buttonMask = 0;
     reportBuffer.dx = 0;
     reportBuffer.dy = 0;
